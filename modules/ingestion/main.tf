@@ -44,7 +44,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 
 data "archive_file" "lambda_collect_price_zip" {
   type        = "zip"
-  source_dir = "lambda/scripts/collect_prices"
+  source_dir = "modules/ingestion/lambda/scripts/collect_prices"
   output_path = "collect_prices.zip"
 }
 
@@ -60,6 +60,7 @@ resource "aws_lambda_function" "create_jobs_lambda" {
   environment {
     variables = {
         raw_bucket_name = var.raw_bucket_name
+        username = var.username
     }
   }
 }

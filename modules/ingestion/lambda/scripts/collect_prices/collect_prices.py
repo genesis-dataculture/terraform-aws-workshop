@@ -9,6 +9,8 @@ def lambda_handler(event, context):
     tickers = ["bitcoin", "ethereum"]
     s3_resource = boto3.resource("s3")
     bucket_name = os.getenv("raw_bucket_name")
+    username = os.getenv("username")
+    
     for ticker in tickers:
         url = f'https://api.coingecko.com/api/v3/simple/price?ids={ticker}&vs_currencies=usd'
         try:
@@ -23,7 +25,7 @@ def lambda_handler(event, context):
                 }
                 print(price)
                 
-                obj = s3_resource.Object(bucket_name, f'{ticker}/{datetime.now()}.json')
+                obj = s3_resource.Object(bucket_name, f'{username}/{ticker}/{datetime.now()}.json')
                 obj.put(
                     Body=(bytes(json.dumps(price_dict).encode('UTF-8')))
                 )
