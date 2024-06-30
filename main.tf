@@ -7,5 +7,5 @@ terraform {
 }
 
 resource "aws_s3_bucket" "raw_bucket" {
-    bucket = "raw-data-bucket-genesis-tf"
+    bucket = "raw-data-bucket-genesis-${var.username}"
 }
