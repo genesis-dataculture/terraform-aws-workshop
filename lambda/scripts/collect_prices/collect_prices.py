@@ -1,13 +1,14 @@
 import json
 import urllib.request
 import boto3
+import os
 
 from datetime import datetime
 
 def lambda_handler(event, context):
     tickers = ["bitcoin", "ethereum"]
     s3_resource = boto3.resource("s3")
-    bucket_name = 'raw-data-bucket-genesis-lmeazzini'
+    bucket_name = os.getenv("raw_bucket_name")
     for ticker in tickers:
         url = f'https://api.coingecko.com/api/v3/simple/price?ids={ticker}&vs_currencies=usd'
         try:

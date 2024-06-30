@@ -5,3 +5,7 @@ variable "aws_region" {
 variable "username" {
   description = "User name"
 }
+
+variable "raw_bucket_name" {
+  description = "raw bucket name"
+}
