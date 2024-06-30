@@ -23,14 +23,14 @@ resource "aws_iam_role_policy" "glue_policy" {
     Statement = [
       {
         Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket"
+          "s3:*"
         ],
         Effect   = "Allow",
         Resource = [
           "arn:aws:s3:::${var.raw_bucket_name}",
-          "arn:aws:s3:::${var.raw_bucket_name}/*"
+          "arn:aws:s3:::${var.raw_bucket_name}/*",
+          "arn:aws:s3:::${var.gold_bucket_name}",
+          "arn:aws:s3:::${var.gold_bucket_name}/*",
         ]
       },
       {
@@ -38,6 +38,17 @@ resource "aws_iam_role_policy" "glue_policy" {
           "glue:*"
         ],
         Effect   = "Allow",
+        Resource = "*"
+      },
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams",
+          "logs:DescribeLogGroups"
+        ],
+        Effect = "Allow",
         Resource = "*"
       }
     ]
@@ -81,5 +92,44 @@ resource "aws_glue_crawler" "crawler" {
 
   recrawl_policy {
     recrawl_behavior = "CRAWL_EVERYTHING"
+  }
+}
+
+
+resource "aws_s3_object" "process_iceberg_glue_script" {
+  bucket = var.raw_bucket_name
+  key    = "glue_scripts/${var.username}/process_iceberg.py"
+  source = "modules/etl/scripts/process_iceberg.py"
+  etag   = filemd5("modules/etl/scripts/process_iceberg.py")
+}
+
+
+resource "aws_glue_job" "process_iceberg" {
+  for_each = toset(var.tickers)
+
+  name        = "process_${each.key}"
+  role_arn    = aws_iam_role.glue_role.arn
+  command {
+    script_location = "s3://${var.raw_bucket_name}/glue_scripts/${var.username}/process_iceberg.py"
+    python_version  = "3"
+    name            = "glueetl"
+  }
+  glue_version = "4.0"
+  max_retries  = 0
+  timeout      = 60
+  max_capacity = 2.0
+  number_of_workers = null
+  default_arguments = {
+    "--job-bookmark-option" = "job-bookmark-disable" 
+    "--enable-metrics" = ""
+    "--enable-glue-datacatalog" = "true"
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--enable-continuous-log-filter" = "true"
+    "--datalake-formats" = "iceberg"
+    "--GOLD_BUCKET_NAME" = var.gold_bucket_name
+    "--INPUT_DATABASE" = aws_glue_catalog_database.glue_database.name
+    "--OUTPUT_DATABASE" = aws_glue_catalog_database.glue_database.name
+    "--TABLE_NAME" = each.key
+    "--USERNAME" = var.username
   }
 }
