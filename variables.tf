@@ -9,3 +9,7 @@ variable "username" {
 variable "raw_bucket_name" {
   description = "raw bucket name"
 }
+
+variable "gold_bucket_name" {
+  description = "gold bucket name"
+}
